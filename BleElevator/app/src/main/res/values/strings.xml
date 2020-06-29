@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">BleElevator</string>
+    <string name="Scan">Scan</string>
+    <string name="call">Call</string>
+    <string name="action_about">about</string>
+    <string name="action_help">help</string>
+    <string name="How_to_use"> This is a Bluetooth App when you press scan it will search for the elevator and automatically connects
+    after that a dialog will be shown to enter the floor number you want to get to (Beware you only have 5 seconds to do so
+    after that the App discconects and you have to press ok when Disconnect Dialog Appears)</string>
+</resources>
