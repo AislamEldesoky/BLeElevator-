@@ -91,14 +91,29 @@ class MainActivity : AppCompatActivity() {
                     bluetoothGatt = gatt
                     runOnUiThread {
                         if (isConnected == true && isDisconnected == false && sentCommand == false) {
-                            dismissProgressBar()
-                            connectedToast(this@MainActivity)
-                            callElevatorDialog(
-                                bluetoothGatt!!.getService(elevatorServiceUUID).getCharacteristic(
-                                    elevatorCharacteristicUUID
+                            if (gatt?.device?.name == "") {
+
+
+                                dismissProgressBar()
+                                connectedToast(this@MainActivity)
+                                callElevatorDialog(
+                                    bluetoothGatt!!.getService(someServiceUUID)
+                                        .getCharacteristic(
+                                            someCharacteristicUUID
+                                        )
                                 )
-                            )
-                            countToDisconnect(bluetoothGatt)
+                                countToDisconnect(bluetoothGatt)
+                            }
+                            if(gatt?.device?.name=="My BLE Tester"){
+                                dismissProgressBar()
+                                connectedToast(this@MainActivity)
+                                elevatorCallDialog(
+                                    bluetoothGatt?.getService(someServiceUUID)?.getCharacteristic(
+                                        someCharacteristicUUID)!!
+                                )
+                                countToDisconnect(bluetoothGatt)
+                            }
+
                         }
                     }
 
@@ -152,10 +167,8 @@ class MainActivity : AppCompatActivity() {
                         "ScanCallback",
                         "Found BLE device! Name: ${name ?: "Unnamed"}, address: $address"
                     )
-                        scanResults.clear()
-                        stopBleScan()
-                        result.device.connectGatt(applicationContext, true, gattCallback)
-                        showProgressBar()
+
+
 
                 }
                 scanResults.add(result)
@@ -190,7 +203,8 @@ class MainActivity : AppCompatActivity() {
             }
             with(result.device) {
                 Log.w("ScanResultAdapter", "Connecting to $address")
-                //connectGatt(applicationContext,false,gattCallback)
+                connectGatt(applicationContext,false,gattCallback)
+                showProgressBar()
             }
         }
     }
@@ -219,21 +233,22 @@ class MainActivity : AppCompatActivity() {
                         alert {
                             title = "disconnected"
                             message = "please resart app and try again"
-                            positiveButton("OK") {
-                                if (isConnected == true && sentCommand == false && isDisconnected == false) {
-                                    isDisconnected = true
-                                    bluetoothGatt?.disconnect()
-                                    disconnectGatt()
-                                    disconnectedToast(this@MainActivity)
-                                }
-                                if (isConnected == true && sentCommand == true && isDisconnected == false) {
-                                    isDisconnected = true
-                                    sentCommand = false
-                                    disconnectGatt()
-                                    bluetoothGatt?.disconnect()
-                                    disconnectedToast(this@MainActivity)
+                            if (isConnected == true && sentCommand == false && isDisconnected == false) {
+                                isDisconnected = true
+                                bluetoothGatt?.disconnect()
+                                disconnectGatt()
+                                disconnectedToast(this@MainActivity)
+                            }
+                            if (isConnected == true && sentCommand == true && isDisconnected == false) {
+                                isDisconnected = true
+                                sentCommand = false
+                                disconnectGatt()
+                                bluetoothGatt?.disconnect()
+                                disconnectedToast(this@MainActivity)
 
-                                }
+                            }
+                            positiveButton("OK") {
+
                             }
                         }.show()
                     }
@@ -252,8 +267,8 @@ class MainActivity : AppCompatActivity() {
         var elevatorServiceUUID: UUID = UUID.fromString("000000ff-0000-1000-8000-00805f9b34fb")
         var elevatorCharacteristicUUID: UUID =
             UUID.fromString("0000ff01-0000-1000-8000-00805f9b34fb")
-        var someServiceUUID: UUID = UUID.fromString("55107dc5-8453-52fe-2c44-f28add34040b")
-        var someCharacteristicUUID: UUID = UUID.fromString("3e605366-1b06-3b24-689d-fccd0a0dfaf0")
+        var someServiceUUID: UUID = UUID.fromString("9fa480e0-4967-4542-9390-d343dc5d04ae")
+        var someCharacteristicUUID: UUID = UUID.fromString("af0badb1-5b99-43cd-917a-a77bc549e3cc")
         var bluetoothGatt: BluetoothGatt? = null
         var isConnected = false
         var sentCommand = false
@@ -268,6 +283,8 @@ class MainActivity : AppCompatActivity() {
     val filter = ScanFilter.Builder().setServiceUuid(
         ParcelUuid.fromString(elevatorServiceUUID.toString())
     ).build()
+    val cabinetFilter  = ScanFilter.Builder().setServiceUuid(ParcelUuid.fromString(
+        someServiceUUID.toString())).build()
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -352,12 +369,13 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     private fun startBleScan() {
         filters.add(filter)
+        filters.add(cabinetFilter)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isLocationPermissionGranted) {
             requestLocationPermission()
         } else {
             scanResults.clear()
             scanResultAdapter.notifyDataSetChanged()
-            bleScanner.startScan(filters, scanSettings, scanCallback)
+            bleScanner.startScan(null, scanSettings, scanCallback)
             isScanning = true
         }
     }
@@ -549,6 +567,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    }
+    private fun elevatorCallDialog(characteristic:BluetoothGattCharacteristic){
+        alert {
+            title = "Call"
+            message= "Call the Elevator"
+            positiveButton("CALL"){
+                writeCharacteristic(characteristic,5000)
+            }
+        }.show()
     }
 }
 
